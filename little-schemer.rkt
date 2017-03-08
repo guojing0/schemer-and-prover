@@ -445,5 +445,72 @@
       ((null? rel) '())
       (else (cons (revpair (car rel)) (revrel (cdr rel)))))))
 
+(define rember-f
+  (lambda (test?)
+    (lambda (a l)
+      (cond
+        ((null? l) '())
+        ((test? a (car l)) (cdr l))
+        (else (cons (car l) ((rember-f test?) a (cdr l))))))))
+
+(define eq?-c
+  (lambda (a)
+    (lambda (x)
+      (eq? a x))))
+
+(define insertR-f
+  (lambda (test?)
+    (lambda (new old l)
+      (cond
+        ((null? l) '())
+        ((test? old (car l)) (cons old (cons new (cdr l))))
+        (else (cons (car l) ((insertR-f test?) new old (cdr l))))))))
+
+(define insertL-f
+  (lambda (test?)
+    (lambda (new old l)
+      (cond
+        ((null? l) '())
+        ((test? old (car l)) (cons new l))
+        (else (cons (car l) ((insertL-f test?) new old (cdr l))))))))
+
+(define seqL
+  (lambda (new old l)
+    (cons new (cons old l))))
+
+(define seqR
+  (lambda (new old l)
+    (cons old (cons new l))))
+
+(define insert-g
+  (lambda (seq)
+    (lambda (new old l)
+      (cond
+        ((null? l) '())
+        ((eq? old (car l)) (seq new old (cdr l)))
+        (else (cons (car l) ((insert-g seq) new old (cdr l))))))))
+
+(define seqS
+  (lambda (new old l)
+    (cons new l)))
+
+(define seqrem
+  (lambda (new old l)
+    l))
+
+(define atom-to-function
+  (lambda (x)
+    (cond
+      ((eq? x '+) o+)
+      ((eq? x '*) o*)
+      (else power))))
+
+(define value-3
+  (lambda (nexp)
+    (cond
+      ((atom? nexp) nexp)
+      (else ((atom-to-function (operator nexp))
+             (value-3 (1st-sub-exp nexp))
+             (value-3 (2nd-sub-exp nexp)))))))
 
 
