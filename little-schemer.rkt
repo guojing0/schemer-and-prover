@@ -1,3 +1,5 @@
+(define call/cc call-with-current-continuation)
+
 (define atom?
   (lambda (x)
     (and (not (pair? x)) (not (null? x)))))
@@ -512,5 +514,94 @@
       (else ((atom-to-function (operator nexp))
              (value-3 (1st-sub-exp nexp))
              (value-3 (2nd-sub-exp nexp)))))))
+
+(define multirember-f
+  (lambda (test?)
+    (lambda (a lat)
+      (cond
+        ((null? lat) '())
+        ((test? a (car lat)) ((multirember-f test?) a (cdr lat)))
+        (else (cons (car lat) ((multirember-f test?) a (cdr lat))))))))
+
+(define eq?-tuna
+  (lambda (c)
+    (eq? c 'tuna)))
+
+(define multiremberT
+  (lambda (test? lat)
+    (cond
+      ((null? lat) '())
+      ((test? (car lat)) (multiremberT test? (cdr lat)))
+      (else (cons (car lat) (multiremberT test? (cdr lat)))))))
+
+(define multirember&co
+  (lambda (a lat col)
+    (cond
+      ((null? lat) (col '() '()))
+      ((eq? a (car lat)) (multirember&co a (cdr lat) (lambda (newlat seen)
+                                                       (col newlat (cons (car lat) seen)))))
+      (else (multirember&co a (cdr lat) (lambda (newlat seen)
+                                          (col (cons (car lat) newlat) seen)))))))
+
+(define a-friend
+  (lambda (x y)
+    (null? y)))
+
+(define new-friend
+  (lambda (newlat seen)
+    (a-friend newlat (cons 'tuna seen))))
+
+(define last-friend
+  (lambda (x y)
+    (length x)))
+
+;; (multirember&co 'tuna '(berry tuna and fish) last-friend)
+;; ->
+;; (multirember&co 'tuna '() (lambda (newlato seeno)
+;;                             ((lambda (newlat0 seen0)
+;;                                ((lambda (newlat1 seen1)
+;;                                   ((lambda (newlat2 seen2)
+;;                                      (last-friend (cons 'berry newlat2) seen2))
+;;                                    newlat1 (cons 'tuna seen1)))
+;;                                 (cons 'and newlat0) seen0))
+;;                              (cons 'fish newlato) seeno)))
+;; ->
+;; (last-friend '(berry and fish) '(tuna))
+;; ->
+;; (length '(berry and fish)) -> 3
+
+(define multiinsertLR
+  (lambda (new oldL oldR lat)
+    (cond
+      ((null? lat) '())
+      ((eq? oldL (car lat)) (cons new (cons oldL (multiinsertLR new oldL oldR (cdr lat)))))
+      ((eq? oldR (car lat)) (cons oldR (cons new (multiinsertLR new oldL oldR (cdr lat)))))
+      (else (cons (car lat) (multiinsertLR new oldL oldR (cdr lat)))))))
+
+(define multiinsertLR&co
+  (lambda (new oldL oldR lat col)
+    (cond
+      ((null? lat)
+       (col '() 0 0))
+      ((eq? oldL (car lat))
+       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R) ...)))
+      ((eq? oldR (car lat))
+       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R) ...)))
+      (else
+       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R) ...))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
