@@ -102,12 +102,12 @@
 
 (define sub1 (lambda (n) (- n 1)))
 
-(define o+
+(define +o
   (lambda (m n)
     (cond
       ((zero? m) n)
-      (else (o+ (sub1 m) (add1 n))))))
-; (else (add1 (o+ n (sub1 m)))))))
+      (else (+o (sub1 m) (add1 n))))))
+; (else (add1 (+o n (sub1 m)))))))
 
 (define o-
   (lambda (m n)
@@ -120,20 +120,20 @@
   (lambda (tup)
     (cond
       ((null? tup) 0)
-      (else (o+ (car tup) (addtup (cdr tup)))))))
+      (else (+o (car tup) (addtup (cdr tup)))))))
 
-(define o*
+(define *o
   (lambda (m n)
     (cond
       ((zero? m) 0)
-      (else (o+ n (o* (sub1 m) n))))))
+      (else (+o n (*o (sub1 m) n))))))
 
 (define tup+
   (lambda (tup1 tup2)
     (cond
       ((null? tup1) tup2)
       ((null? tup2) tup1)
-      (else (cons (o+ (car tup1) (car tup2))
+      (else (cons (+o (car tup1) (car tup2))
                   (tup+ (cdr tup1) (cdr tup2)))))))
 
 (define o>
@@ -159,7 +159,7 @@
   (lambda (m n)
     (cond
       ((zero? n) 1)
-      (else (o* m (power m (sub1 n)))))))
+      (else (*o m (power m (sub1 n)))))))
 
 (define o/
   (lambda (m n)
@@ -239,7 +239,7 @@
        (cond
          ((eq? a (car l)) (add1 (occur* a (cdr l))))
          (else (occur* a (cdr l)))))
-      (else (o+ (occur* a (car l))
+      (else (+o (occur* a (car l))
                 (occur* a (cdr l)))))))
 
 (define subst*
@@ -315,9 +315,9 @@
   (lambda (nexp)
     (cond
       ((atom? nexp) nexp)
-      ((eq? '+ (cadr nexp)) (o+ (value (car nexp))
+      ((eq? '+ (cadr nexp)) (+o (value (car nexp))
                                 (value (caddr nexp))))
-      ((eq? '* (cadr nexp)) (o* (value (car nexp))
+      ((eq? '* (cadr nexp)) (*o (value (car nexp))
                                 (value (caddr nexp))))
       (else (power (value (car nexp)) (value (caddr nexp)))))))
 
@@ -335,9 +335,9 @@
   (lambda (nexp)
     (cond
       ((atom? nexp) nexp)
-      ((eq? '+ (operator nexp)) (o+ (value-2 (1st-sub-exp nexp))
+      ((eq? '+ (operator nexp)) (+o (value-2 (1st-sub-exp nexp))
                                     (value-2 (2nd-sub-exp nexp))))
-      ((eq? '* (operator nexp)) (o* (value-2 (1st-sub-exp nexp))
+      ((eq? '* (operator nexp)) (*o (value-2 (1st-sub-exp nexp))
                                     (value-2 (2nd-sub-exp nexp))))
       (else (power (value-2 (1st-sub-exp nexp))
                    (value-2 (2nd-sub-exp nexp)))))))
@@ -503,8 +503,8 @@
 (define atom-to-function
   (lambda (x)
     (cond
-      ((eq? x '+) o+)
-      ((eq? x '*) o*)
+      ((eq? x '+) +o)
+      ((eq? x '*) *o)
       (else power))))
 
 (define value-3
@@ -584,11 +584,70 @@
       ((null? lat)
        (col '() 0 0))
       ((eq? oldL (car lat))
-       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R) ...)))
+       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R)
+                                                   (col (cons new (cons oldL newlat)) (add1 L) R))))
       ((eq? oldR (car lat))
-       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R) ...)))
-      (else
-       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R) ...))))))
+       (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R)
+                                                   (col (cons oldR (cons new newlat)) L (add1 R)))))
+      (else (multiinsertLR&co new oldL oldR (cdr lat) (lambda (newlat L R)
+                                                        (col (cons (car lat) newlat) L R)))))))
+
+; (multiinsertLR&co 'salty 'fish 'chips '(chips and fish or fish and chips) list)
+; ->
+; ((lambda (newlat L6 R6)
+;    ((lambda (newlat L5 R5)
+;       ((lambda (newlat L4 R4)
+;          ((lambda (newlat L3 R3)
+;             ((lambda (newlat L2 R2)
+;                ((lambda (newlat L1 R1)
+;                   ((lambda (newlat L0 R0)
+;                      (list (cons 'chips (cons 'salty newlat)) L0 (add1 R0)))
+;                    (cons 'and newlat) L1 R1))
+;                 (cons 'salty (cons 'fish newlat)) (add1 L2) R2))
+;              (cons 'or newlat) L3 R3))
+;           (cons 'salty (cons 'fish newlat)) (add1 L4) R4))
+;        (cons 'and newlat) L5 R5))
+;     (cons 'chips (cons 'salty newlat)) L6 (add1 R6)))
+;  '() 0 0)
+; ->
+; (list '(chips salty and salty fish or salty fish and chips salty) 2 2)
+
+(define evens-only*
+  (lambda (l)
+    (cond
+      ((null? l) '())
+      ((atom? (car l))
+       (cond
+         ((even? (car l)) (cons (car l) (evens-only* (cdr l))))
+         (else (evens-only* (cdr l)))))
+      (else (cons (evens-only* (car l)) (evens-only* (cdr l)))))))
+
+(define evens-only*&co
+  (lambda (l col)
+    (cond
+      ((null? l) (col '() 1 0))
+      ((atom? (car l))
+       (cond
+         ((even? (car l)) (evens-only*&co (cdr l) (lambda (newl p s)
+                                                    (col (cons (car l) newl) (*o (car l) p) s))))
+         (else (evens-only*&co (cdr l) (lambda (newl p s)
+                                         (col newl p (+o (car l) s)))))))
+      (else (evens-only*&co (car l) (lambda (al ap as)
+                                      (evens-only*&co (cdr l) (lambda (dl dp ds)
+                                                                (col (cons al dl)
+                                                                     (*o ap dp)
+                                                                     (+o as ds))))))))))
+
+(define the-last-friend
+  (lambda (newl product sum)
+    (cons sum (cons product newl))))
+
+; (evens-only*&co '((9 1 2 8) 3 10 ((9 9) 7 6) 2) the-last-friend)
+; (38 1920 (2 8) 10 (() 6) 2)
+
+
+
+
 
 
 
