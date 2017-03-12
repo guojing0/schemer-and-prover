@@ -161,11 +161,11 @@
       ((zero? n) 1)
       (else (*o m (power m (sub1 n)))))))
 
-(define o/
+(define /o
   (lambda (m n)
     (cond
       ((o< m n) 0)
-      (else (add1 (o/ (- m n) n))))))
+      (else (add1 (/o (- m n) n))))))
 
 (define len
   (lambda (lat)
@@ -645,18 +645,82 @@
 ; (evens-only*&co '((9 1 2 8) 3 10 ((9 9) 7 6) 2) the-last-friend)
 ; (38 1920 (2 8) 10 (() 6) 2)
 
+(define looking
+  (lambda (a lat)
+    (keep-looking a (pick 1 lat) lat)))
 
+(define keep-looking
+  (lambda (a sorn lat) ; symbol or number
+    (cond
+      ((number? sorn) (keep-looking a (pick sorn lat) lat))
+      (else (eq? a sorn)))))
 
+(define eternity
+  (lambda (x)
+    (eternity x)))
 
+(define shift
+  (lambda (pair)
+    (build (first (first pair))
+           (build (second (first pair))
+                  (second pair)))))
 
+(define align
+  (lambda (pora)
+    (cond
+      ((atom? pora) pora)
+      ((a-pair? (first pora)) (align (shift pora)))
+      (else (build (first pora) (align (Second pora)))))))
 
+(define length*
+  (lambda (pora)
+    (cond
+      ((atom? pora) 1)
+      (else (+o (length* (first pora))
+                (length* (second pora)))))))
 
+(define weight*
+  (lambda (pora)
+    (cond
+      ((atom? pora) 1)
+      (else (+o (*o (weight* (first pora)) 2)
+                (weight* (second pora)))))))
 
+(define shuffle
+  (lambda (pora)
+    (cond
+      ((atom? pora) pora)
+      ((a-pair? (first pora)) (shuffle (revpair pora)))
+      (else (build (first pora) (shuffle (second pora)))))))
 
+(define C
+  (lambda (n)
+    (cond
+      ((one? n) 1)
+      ((even? n) (C (/ n 2)))
+      (else (C (add1 (*o 3 n)))))))
 
+(define A
+  (lambda (n m)
+    (cond
+      ((zero? n) (add1 m))
+      ((zero? m) (A (sub1 n) 1))
+      (else (A (sub1 n) (A n (sub1 m)))))))
 
+(define Y
+  (lambda (le)
+    ((lambda (f) (f f))
+     (lambda (f)
+       (le (lambda (x)
+             ((f f) x)))))))
 
+((Y (lambda (length)
+      (lambda (l)
+        (cond
+          ((null? l) 0)
+          (else (add1 (length (cdr l)))))))) '(a b c d)) ; -> 4
 
+(define new-entry build)
 
 
 
