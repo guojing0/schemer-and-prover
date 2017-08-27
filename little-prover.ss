@@ -226,6 +226,58 @@
                              (memb? (cdr '())))))
                    (() (equal-same 'nil))))))
 
+(defun defun-memb?/remb1 ()
+  (J-Bob/define (defun-memb?/remb0)
+                '(((dethm memb?/remb1 (x1)
+                          (equal (memb?
+                                  (remb (cons x1 '())))
+                                 'nil))
+                   nil
+                   ((1 1) (remb (cons x1 '())))
+                   ((1 1 Q) (atom/cons x1 '()))
+                   ((1 1) (if-false '()
+                                    (if
+                                     (equal (car (cons x1 '())) '?)
+                                     (remb (cdr (cons x1 '())))
+                                     (cons (car (cons x1 '()))
+                                           (remb (cdr (cons x1 '())))))))
+                   ((1 1 Q 1) (car/cons x1 '()))
+                   ((1 1 A 1) (cdr/cons x1 '()))
+                   ((1 1 E 1) (car/cons x1 '()))
+                   ((1 1 E 2 1) (cdr/cons x1 '()))
+                   ((1) (if-same (equal x1 '?) ; if lifting
+                                 (memb? (if (equal x1 '?)
+                                            (remb '())
+                                            (cons x1 (remb '()))))))
+                   ((1 A 1) (if-nest-A (equal x1 '?)
+                                       (remb '())
+                                       (cons x1 (remb '()))))
+                   ((1 E 1) (if-nest-E (equal x1 '?)
+                                       (remb '())
+                                       (cons x1 (remb '()))))
+                   ((1 A) (memb?/remb0))
+                   ((1 E) (memb? (cons x1 (remb '()))))
+                   ((1 E Q) (atom/cons x1 (remb '())))
+                   ((1 E) (if-false 'nil
+                                    (if (equal (car (cons x1 (remb '())))
+                                               '?)
+                                        't
+                                        (memb? (cdr (cons x1 (remb '())))))))
+                   ((1 E Q 1) (car/cons x1 (remb '())))
+                   ((1 E E 1) (cdr/cons x1 (remb '())))
+                   ((1 E) (if-nest-E (equal x1 '?)
+                                     't
+                                     (memb? (remb '()))))
+                   ((1 E) (memb?/remb0))
+                   ((1) (if-same (equal x1 '?) 'nil))
+                   (() (equal-same 'nil))))))
+
+(J-Bob/prove (defun-memb?/remb1)
+             '(((dethm memb?/remb (xs)
+                       (equal (memb? (remb xs)) 'nil))
+                (list-induction xs)
+                ((A 1 1) (remb xs))
+                )))
 ;;; misc
 
 (defun list0? (x)
