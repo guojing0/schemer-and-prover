@@ -127,22 +127,6 @@
                    ((1) (car/cons b '()))
                    (() (equal-same b))))))
 
-;(J-Bob/prove (prelude)
-;             '(((defun memb? (xs)
-;                  (if (atom xs)
-;                      'nil
-;                      (if (equal (car xs) '?)
-;                          't
-;                          (memb? (cdr xs)))))
-;                (size xs))
-;               ((defun remb (xs)
-;                  (if (atom xs)
-;                      '()
-;                      (if (equal (car xs) '?)
-;                          (remb (cdr xs))
-;                          (cons (car xs) (remb (cdr xs))))))
-;                (size xs))))
-
 (defun defun-list? ()
   (J-Bob/define (prelude+first-second-of-pair)
                 '(((defun list? (x)
@@ -181,44 +165,66 @@
                    ((E) (if-true 't 'nil))
                    (() (if-same (atom y) 't))))))
 
-(J-Bob/prove (prelude)
+(defun defun-memb?-and-remb ()
+  (J-Bob/define (prelude) ; prove two theorems inside one function
 
-             ;; proof of memb?
-             '(((defun memb? (xs)
-                  (if (atom xs)
-                      'nil
-                      (if (equal (car xs) '?)
-                          't
-                          (memb? (cdr xs)))))
-                (size xs)
-                ((Q) (natp/size xs))
-                (() (if-true
+                ;; proof of memb?
+                '(((defun memb? (xs)
                      (if (atom xs)
-                         't
+                         'nil
                          (if (equal (car xs) '?)
                              't
-                             (< (size (cdr xs)) (size xs))))
-                     'nil))
-                ((E E) (size/cdr xs))
-                ((E) (if-same (equal (car xs) '?) 't))
-                (() (if-same (atom xs) 't)))
+                             (memb? (cdr xs)))))
+                   (size xs)
+                   ((Q) (natp/size xs))
+                   (() (if-true
+                        (if (atom xs)
+                            't
+                            (if (equal (car xs) '?)
+                                't
+                                (< (size (cdr xs)) (size xs))))
+                        'nil))
+                   ((E E) (size/cdr xs))
+                   ((E) (if-same (equal (car xs) '?) 't))
+                   (() (if-same (atom xs) 't)))
 
-               ;; proof of remb
-               ((defun remb (xs)
-                  (if (atom xs)
-                      '()
-                      (if (equal (car xs) '?)
-                          (remb (cdr xs))
-                          (cons (car xs) (remb (cdr xs))))))
-                (size xs)
-                ((Q) (natp/size xs))
-                (() (if-true
+                  ;; proof of remb
+                  ((defun remb (xs)
                      (if (atom xs)
-                         't
-                         (< (size (cdr xs)) (size xs)))
-                     'nil))
-                ((E) (size/cdr xs))
-                (() (if-same (atom xs) 't)))))
+                         '()
+                         (if (equal (car xs) '?)
+                             (remb (cdr xs))
+                             (cons (car xs) (remb (cdr xs))))))
+                   (size xs)
+                   ((Q) (natp/size xs))
+                   (() (if-true
+                        (if (atom xs)
+                            't
+                            (< (size (cdr xs)) (size xs)))
+                        'nil))
+                   ((E) (size/cdr xs))
+                   (() (if-same (atom xs) 't))))))
+
+(defun defun-memb?/remb0 ()
+  (J-Bob/define (defun-memb?-and-remb)
+                '(((dethm memb?/remb0 ()
+                          (equal (memb? (remb '())) 'nil))
+                   nil
+                   ((1 1) (remb '())) ; expand remb
+                   ((1 1 Q) (atom '()))
+                   ((1 1) (if-true '()
+                                   (if (equal (car '()) '?)
+                                       (remb (cdr '()))
+                                       (cons (car '())
+                                             (remb (cdr '()))))))
+                   ((1) (memb? '())) ; expand memb?
+                   ((1 Q) (atom '()))
+                   ((1) (if-true
+                         'nil
+                         (if (equal (car '()) '?)
+                             't
+                             (memb? (cdr '())))))
+                   (() (equal-same 'nil))))))
 
 ;;; misc
 
@@ -252,3 +258,20 @@
           y)
       (cons (sub x (car y))
             (sub x (cdr y)))))
+
+(defun memb? (xs)
+  (if (atom xs)
+      'nil
+      (if (equal (car xs) '?)
+          't
+          (memb? (cdr xs)))))
+
+(defun remb (xs)
+  (if (atom xs)
+      '()
+      (if (equal (car xs) '?)
+          (remb (cdr xs))
+          (cons (car xs) (remb (cdr xs))))))
+
+(dethm memb?/remb0 ()
+       (equal (memb? (remb '())) 'nil))
