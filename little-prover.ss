@@ -81,6 +81,23 @@
 (dethm in-second-of-pair (a)
        (equal (in-pair? (pair a '?)) '?))
 
+;;; axioms of size
+
+(dethm natp/size (x)
+       (equal (natp (size x)) 't))
+
+(dethm size/car (x)
+       (if (atom x)
+           't
+           (equal (< (size (car x)) (size x))
+                  't)))
+
+(dethm size/cdr (x)
+       (if (atom x)
+           't
+           (equal (< (size (cdr x)) (size x))
+                  't)))
+
 ;;; proofs
 
 (defun prelude+first-second-of-pair ()
@@ -126,3 +143,112 @@
 ;                          (cons (car xs) (remb (cdr xs))))))
 ;                (size xs))))
 
+(defun defun-list? ()
+  (J-Bob/define (prelude+first-second-of-pair)
+                '(((defun list? (x)
+                     (if (atom x)
+                         (equal x '())
+                         (list? (cdr x))))
+                   (size x)
+                   ((Q) (natp/size x))
+                   (() (if-true (if (atom x)
+                                    't
+                                    (< (size (cdr x))
+                                       (size x))) 'nil))
+                   ((E) (size/cdr x))
+                   (() (if-same (atom x) 't))))))
+
+(defun defun-sub ()
+  (J-Bob/define (prelude)
+                '(((defun sub (x y)
+                     (if (atom y)
+                         (if (equal y '?)
+                             x
+                             y)
+                         (cons (sub x (car y))
+                               (sub x (cdr y)))))
+                   (size y)
+                   ((Q) (natp/size y))
+                   (() (if-true
+                        (if (atom y)
+                            't
+                            (if (< (size (car y)) (size y))
+                                (< (size (cdr y)) (size y))
+                                'nil))
+                        'nil))
+                   ((E Q) (size/car y))
+                   ((E A) (size/cdr y))
+                   ((E) (if-true 't 'nil))
+                   (() (if-same (atom y) 't))))))
+
+(J-Bob/prove (prelude)
+
+             ;; proof of memb?
+             '(((defun memb? (xs)
+                  (if (atom xs)
+                      'nil
+                      (if (equal (car xs) '?)
+                          't
+                          (memb? (cdr xs)))))
+                (size xs)
+                ((Q) (natp/size xs))
+                (() (if-true
+                     (if (atom xs)
+                         't
+                         (if (equal (car xs) '?)
+                             't
+                             (< (size (cdr xs)) (size xs))))
+                     'nil))
+                ((E E) (size/cdr xs))
+                ((E) (if-same (equal (car xs) '?) 't))
+                (() (if-same (atom xs) 't)))
+
+               ;; proof of remb
+               ((defun remb (xs)
+                  (if (atom xs)
+                      '()
+                      (if (equal (car xs) '?)
+                          (remb (cdr xs))
+                          (cons (car xs) (remb (cdr xs))))))
+                (size xs)
+                ((Q) (natp/size xs))
+                (() (if-true
+                     (if (atom xs)
+                         't
+                         (< (size (cdr xs)) (size xs)))
+                     'nil))
+                ((E) (size/cdr xs))
+                (() (if-same (atom xs) 't)))))
+
+;;; misc
+
+(defun list0? (x)
+  (equal x '()))
+
+(defun list1? (x)
+  (if (atom x)
+      'nil
+      (list0? (cdr x))))
+
+(defun list2? (x)
+  (if (atom x)
+      'nil
+      (list1? (cdr x))))
+
+(defun list? (x)
+  (if (atom x)
+      (equal x '())
+      (list? (cdr x))))
+
+(defun size (x)
+  (if (atom x)
+      '0
+      (+ '1 (size (car x)) (size (cdr x)))))
+
+(defun sub (x y)
+  (if (atom y)
+      (if (equal y '?)
+          x
+          y)
+      (cons (sub x (car y))
+            (sub x (cdr y)))))
