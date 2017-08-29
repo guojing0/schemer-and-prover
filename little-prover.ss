@@ -327,6 +327,43 @@
                    ((E A) (equal-same 'nil))
                    ((E) (if-same (equal (memb? (remb (cdr xs))) 'nil) 't))
                    (() (if-same (atom xs) 't))))))
+
+(defun defun-ctx? ()
+  (J-Bob/define (defun-memb?/remb)
+                '(((defun ctx? (x)
+                     (if (atom x)
+                         (equal x '?)
+                         (if (ctx? (car x))
+                             't
+                             (ctx? (cdr x)))))
+                   (size x)
+                   ((Q) (natp/size x))
+                   (() (if-true (if (atom x)
+                                    't
+                                    (if (< (size (car x)) (size x))
+                                        (if (ctx? (car x))
+                                            't
+                                            (< (size (cdr x)) (size x)))
+                                        'nil))
+                                'nil))
+                   ((E Q) (size/car x))
+                   ((E A E) (size/cdr x))
+                   ((E) (if-true (if (ctx? (car x))
+                                     't
+                                     't)
+                                 'nil))
+                   ((E) (if-same (ctx? (car x)) 't))
+                   (() (if-same (atom x) 't))))))
+
+(J-Bob/prove (defun-ctx?)
+             '(((dethm ctx?/sub (x y)
+                       (if (ctx? x)
+                           (if (ctx? y)
+                               (equal (ctx? (sub x y)) 't)
+                               't)
+                           't))
+                (star-induction y))))
+
 ;;; misc
 
 (defun list0? (x)
@@ -376,3 +413,22 @@
 
 (dethm memb?/remb0 ()
        (equal (memb? (remb '())) 'nil))
+
+(defun ctx? (x)
+  (if (atom x)
+      (equal x '?)
+      (if (ctx? (car x))
+          't
+          (ctx? (cdr x)))))
+
+(dethm ctx?/sub (x y)
+       (if (ctx? x)
+           (if (ctx? y)
+               (equal (ctx? (sub x y)) 't)
+               't)
+           't))
+
+(dethm ctx?/t (x)
+       (if (ctx? x)
+           (equal (ctx? x) 't)
+           't))
